@@ -12,7 +12,7 @@ Task("Build")
 
 Task("Benchmark")
 .Does(()=> {
-    DotNetRun("./benchmark/Benchmarks/Benchmarks.csproj", new DotNetRunSettings{
+    DotNetRun("./benchmarks/Benchmarks.csproj", new DotNetRunSettings{
         Configuration= configuration 
     });
 });

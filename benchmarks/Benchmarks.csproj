@@ -14,6 +14,6 @@
     <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\EifelMono.TwistedYarn\EifelMono.TwistedYarn.csproj" />
+    <ProjectReference Include="..\src\EifelMono.TwistedYarn\EifelMono.TwistedYarn.csproj" />
   </ItemGroup>
 </Project>
