@@ -56,7 +56,7 @@ public class CancellationTokenNode : IDisposable
 
     private CancellationTokenRegistration? _nodeCancellationTokenRegistration = null;
 
-    public DateTime CancellationRequestedTimeStamp { get; private set } = DateTime.MinValue;
+    public DateTime CancellationRequestedTimeStamp { get; private set; } = DateTime.MinValue;
 
     internal IEnumerable<CancellationToken> ConcatedTokens
         => Node.ConcatedTokens.Concat(Parent.ConcatedTokens).Concat(Child.ConcatedTokens);
