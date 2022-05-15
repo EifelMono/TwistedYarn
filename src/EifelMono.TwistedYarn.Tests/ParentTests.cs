@@ -6,19 +6,23 @@ public class ParentTests
     public async void Test1()
     {
         using var parentCancellationTokenSource = new CancellationTokenSource();
+        using var childCancellationTokenSource = new CancellationTokenSource();
+
 
         using var cancellationTokenNode = new CancellationTokenNode()
-            .AddParent(parentCancellationTokenSource);
+            .AddParent(parentCancellationTokenSource)
+            .AddChild(childCancellationTokenSource);
 
         Assert.False(cancellationTokenNode.Node.WithTimeOut);
 
         Assert.True(cancellationTokenNode.State.IsUndefined());
-        Assert.False(cancellationTokenNode.IsCancellationRequested);
+        Assert.False(cancellationTokenNode.Token.IsCancellationRequested);
        
         parentCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(1));
+        childCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(2));
         try
         {
-            await Task.Delay(TimeSpan.FromSeconds(2), cancellationTokenNode.Token);
+            await Task.Delay(TimeSpan.FromSeconds(10), cancellationTokenNode.Token);
             Assert.True(false, "Something went wrong");
         }
         catch (Exception ex)
@@ -27,17 +31,46 @@ public class ParentTests
             Assert.True(ex is TaskCanceledException);
         }
 
-        Assert.True(cancellationTokenNode.IsCancellationRequested);
-        Assert.True(cancellationTokenNode.IsCanceled());
-
-        Assert.True(cancellationTokenNode.IsParentCanceled());
-        Assert.False(cancellationTokenNode.IsChildCanceled());
-        Assert.False(cancellationTokenNode.IsNodeCanceled());
-        Assert.False(cancellationTokenNode.IsNodeTimeOut());
-
+        Assert.True(cancellationTokenNode.Token.IsCancellationRequested);
         Assert.True(cancellationTokenNode.Parent.IsCancellationRequested);
         Assert.False(cancellationTokenNode.Child.IsCancellationRequested);
         Assert.False(cancellationTokenNode.Node.IsCancellationRequested);
+
+        Assert.True(cancellationTokenNode.State.IsCancellationRequested());
+
+        Assert.False(cancellationTokenNode.State.IsNodeCancellationRequested());
+        Assert.False(cancellationTokenNode.State.IsNodeTimeOutRequested());
+
+        Assert.True(cancellationTokenNode.State.IsParentCancelRequested());
+        Assert.False(cancellationTokenNode.State.IsChildCancellationRequested());
+
+
+        Assert.True(cancellationTokenNode.CancelState.IsCancellationRequested());
+
+        Assert.False(cancellationTokenNode.CancelState.IsNodeCancellationRequested());
+        Assert.False(cancellationTokenNode.CancelState.IsNodeTimeOutRequested());
+
+        Assert.True(cancellationTokenNode.CancelState.IsParentCancelRequested());
+        Assert.False(cancellationTokenNode.CancelState.IsChildCancellationRequested());
+
+        await Task.Delay(TimeSpan.FromSeconds(1));
+
+        Assert.True(cancellationTokenNode.State.IsCancellationRequested());
+
+        Assert.False(cancellationTokenNode.State.IsNodeCancellationRequested());
+        Assert.False(cancellationTokenNode.State.IsNodeTimeOutRequested());
+
+        Assert.True(cancellationTokenNode.State.IsParentCancelRequested());
+        Assert.True(cancellationTokenNode.State.IsChildCancellationRequested());
+
+
+        Assert.True(cancellationTokenNode.CancelState.IsCancellationRequested());
+
+        Assert.False(cancellationTokenNode.CancelState.IsNodeCancellationRequested());
+        Assert.False(cancellationTokenNode.CancelState.IsNodeTimeOutRequested());
+
+        Assert.True(cancellationTokenNode.CancelState.IsParentCancelRequested());
+        Assert.False(cancellationTokenNode.CancelState.IsChildCancellationRequested());
     }
 
     //[Fact]

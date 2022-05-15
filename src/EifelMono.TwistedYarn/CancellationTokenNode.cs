@@ -42,20 +42,22 @@ public class CancellationTokenNode : IDisposable
 
     public void Dispose()
     {
-        if (_node is { })
-            _node.Dispose();
+        _nodeCancellationTokenRegistration?.Dispose();
+        _node?.Dispose();
+        Node.Dispose();
         Parent.Dispose();
         Child.Dispose();
-        Node.Dispose();
     }
 
     #region All elements
+    public CancellationTokenNodeGroupNode Node { get; set; } = new();
     public CancellationTokenNodeGroupTokenSource Parent { get; set; } = new();
     public CancellationTokenNodeGroupTokenSource Child { get; set; } = new();
-    public CancellationTokenNodeGroupNode Node { get; set; } = new();
+
+    private CancellationTokenRegistration? _nodeCancellationTokenRegistration = null;
 
     internal IEnumerable<CancellationToken> ConcatedTokens
-        => Parent.ConcatedTokens.Concat(Child.ConcatedTokens).Concat(Node.ConcatedTokens);
+        => Node.ConcatedTokens.Concat(Parent.ConcatedTokens).Concat(Child.ConcatedTokens);
     #endregion
 
     #region Node
@@ -67,12 +69,21 @@ public class CancellationTokenNode : IDisposable
     protected CancellationTokenSource CreateNode()
     {
         Node.Create();
-        return CancellationTokenSource.CreateLinkedTokenSource(ConcatedTokens.ToArray());
+        var node = CancellationTokenSource.CreateLinkedTokenSource(ConcatedTokens.ToArray());
+        CancelState = CancellationTokenNodeState.None;
+        _nodeCancellationTokenRegistration = node.Token.Register(() =>
+         {
+             lock (_cancelStateLockObject)
+             {
+                 if (_cancelState == CancellationTokenNodeState.None)
+                     _cancelState = State;
+             }
+         });
+        return node;
     }
+    #endregion
 
-    public bool IsCancellationRequested
-        => _node?.IsCancellationRequested ?? false;
-
+    #region State
     public CancellationTokenNodeState State
     {
         get
@@ -80,22 +91,44 @@ public class CancellationTokenNode : IDisposable
             var result = CancellationTokenNodeState.Undefined;
             if (_node is null)
                 return result;
-            if (IsCancellationRequested)
+            if (_node.IsCancellationRequested)
             {
-                result = CancellationTokenNodeState.Canceled;
+                result = CancellationTokenNodeState.CancellationRequested;
                 if (Node.CancellationTokenSource?.IsCancellationRequested ?? false)
-                    result |= CancellationTokenNodeState.NodeCanceled;
+                    result |= CancellationTokenNodeState.NodeCancellationRequested;
                 if (Node.CancellationTokenSourceTimeOut?.IsCancellationRequested ?? false)
-                    result |= CancellationTokenNodeState.NodeTimeOut;
+                    result |= CancellationTokenNodeState.NodeTimeOutRequested;
                 if (Parent.IsCancellationRequested)
-                    result |= CancellationTokenNodeState.ParentCanceled;
+                    result |= CancellationTokenNodeState.ParentCancellationRequested;
                 if (Child.IsCancellationRequested)
-                    result |= CancellationTokenNodeState.ChildCanceled;
+                    result |= CancellationTokenNodeState.ChildCancellationRequested;
             }
             else
                 result = CancellationTokenNodeState.None;
 
             return result;
+        }
+    }
+
+    private CancellationTokenNodeState _cancelState = CancellationTokenNodeState.Undefined;
+
+    private readonly object _cancelStateLockObject = new();
+    public CancellationTokenNodeState CancelState
+    {
+        get
+        {
+            lock (_cancelStateLockObject)
+            {
+                if (_cancelState.IsUndefined())
+                    if (_node != null)
+                        _cancelState = CancellationTokenNodeState.None;
+                return _cancelState;
+            }
+        }
+        set
+        {
+            lock (_cancelStateLockObject)
+                _cancelState = value;
         }
     }
     #endregion

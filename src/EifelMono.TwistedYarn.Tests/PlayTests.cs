@@ -16,7 +16,7 @@ public class PlayTests
         }
         catch(Exception ex)
         {
-            if (cancellationTokenNode.IsCancellationRequested)
+            if (cancellationTokenNode.Token.IsCancellationRequested)
             {
                 
             }
