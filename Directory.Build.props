@@ -1,0 +1,11 @@
+<Project>
+	<PropertyGroup>
+		<Authors>eifelmono</Authors>
+		<Owners>eifelmono, Andreas Klaperich</Owners>
+		<Copyright>(C)copyright eifelmono</Copyright>
+		<Version>0.0.9</Version>
+		<PackageVersion>$(Version)</PackageVersion>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<FileVersion>$(Version)</FileVersion>
+	</PropertyGroup>
+</Project>
