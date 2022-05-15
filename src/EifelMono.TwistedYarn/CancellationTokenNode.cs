@@ -56,6 +56,8 @@ public class CancellationTokenNode : IDisposable
 
     private CancellationTokenRegistration? _nodeCancellationTokenRegistration = null;
 
+    public DateTime CancellationRequestedTimeStamp { get; private set } = DateTime.MinValue;
+
     internal IEnumerable<CancellationToken> ConcatedTokens
         => Node.ConcatedTokens.Concat(Parent.ConcatedTokens).Concat(Child.ConcatedTokens);
     #endregion
@@ -70,13 +72,16 @@ public class CancellationTokenNode : IDisposable
     {
         Node.Create();
         var node = CancellationTokenSource.CreateLinkedTokenSource(ConcatedTokens.ToArray());
-        CancelState = CancellationTokenNodeState.None;
+        CancellationRequestedState = CancellationTokenNodeState.None;
         _nodeCancellationTokenRegistration = node.Token.Register(() =>
          {
-             lock (_cancelStateLockObject)
+             lock (_cancellationRequestedStateLockObject)
              {
-                 if (_cancelState == CancellationTokenNodeState.None)
-                     _cancelState = State;
+                 if (_cancellationRequestedState == CancellationTokenNodeState.None)
+                 {
+                     _cancellationRequestedState = CurrentState;
+                     CancellationRequestedTimeStamp = DateTime.Now;
+                 }
              }
          });
         return node;
@@ -84,7 +89,7 @@ public class CancellationTokenNode : IDisposable
     #endregion
 
     #region State
-    public CancellationTokenNodeState State
+    public CancellationTokenNodeState CurrentState
     {
         get
         {
@@ -110,25 +115,25 @@ public class CancellationTokenNode : IDisposable
         }
     }
 
-    private CancellationTokenNodeState _cancelState = CancellationTokenNodeState.Undefined;
+    private CancellationTokenNodeState _cancellationRequestedState = CancellationTokenNodeState.Undefined;
 
-    private readonly object _cancelStateLockObject = new();
-    public CancellationTokenNodeState CancelState
+    private readonly object _cancellationRequestedStateLockObject = new();
+    public CancellationTokenNodeState CancellationRequestedState
     {
         get
         {
-            lock (_cancelStateLockObject)
+            lock (_cancellationRequestedStateLockObject)
             {
-                if (_cancelState.IsUndefined())
+                if (_cancellationRequestedState.IsUndefined())
                     if (_node != null)
-                        _cancelState = CancellationTokenNodeState.None;
-                return _cancelState;
+                        _cancellationRequestedState = CancellationTokenNodeState.None;
+                return _cancellationRequestedState;
             }
         }
         set
         {
-            lock (_cancelStateLockObject)
-                _cancelState = value;
+            lock (_cancellationRequestedStateLockObject)
+                _cancellationRequestedState = value;
         }
     }
     #endregion
