@@ -27,7 +27,6 @@ public class CancellationTokenNodeGroupTokenSource : CancellationTokenNodeGroupS
 {
     public CancellationTokenNodeTokens Tokens { get; } = new();
 
-
     public override void Dispose()
     {
         base.Dispose();

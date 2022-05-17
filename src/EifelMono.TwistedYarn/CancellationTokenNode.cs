@@ -72,6 +72,7 @@ public class CancellationTokenNode : IDisposable
     {
         Node.Create();
         var node = CancellationTokenSource.CreateLinkedTokenSource(ConcatedTokens.ToArray());
+
         CancellationRequestedState = CancellationTokenNodeState.None;
         _nodeCancellationTokenRegistration = node.Token.Register(() =>
          {
